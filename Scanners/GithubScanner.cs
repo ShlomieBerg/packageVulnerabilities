@@ -1,7 +1,7 @@
-﻿using GraphQL.Client.Abstractions;
-using GraphQL.Client.Http;
+﻿using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using GraphQL;
+using Newtonsoft.Json.Linq;
 
 namespace packageVulnerabilities.Scanners
 {
@@ -39,8 +39,26 @@ namespace packageVulnerabilities.Scanners
             return SupportedEcoSystems.Contains(ecoSystem);
         }
         public async Task<string> ScanFileContent(string content, string ecoSystem)
-        {            
+        {
 
+            // TODO should move to helper util
+            byte[] encodedDataAsBytes = System.Convert.FromBase64String(content);
+            string decodedContentFromBase64 = System.Text.ASCIIEncoding.ASCII.GetString(encodedDataAsBytes);
+            
+            // should use try catch here
+            JObject obj = JObject.Parse(decodedContentFromBase64);
+
+            JEnumerable<JToken> dependencies = obj.GetValue("dependencies").Children();
+
+            IEnumerator<JToken> dependenciesEnumerator = dependencies.GetEnumerator();
+            while (dependenciesEnumerator.MoveNext())
+            {
+                JToken dependency = dependenciesEnumerator.Current;
+                // dependecy = "deep-override": "1.0.1" - for each token figure out how to send the key to api and the compare with version
+
+
+
+            }
             var request = new GraphQLRequest
             {
                Query = @"query securityVulnerabilities ($ecoSystem: SecurityAdvisoryEcosystem, $first: Int, $package: String) { securityVulnerabilities (ecoSystem: $ecoSystem, first: $first, package: $package) { nodes { severity, package {name, ecosystem}, vulnerableVersionRange, firstPatchedVersion { identifier } } } }",
@@ -53,13 +71,13 @@ namespace packageVulnerabilities.Scanners
                }
             };
 
-            try
+            /*try
             {
                 var graphQLResponse = await graphQLHttpClient.SendQueryAsync<dynamic>(request);
             } catch (Exception ex)
             {
-            }
-            return null;
+            }*/
+            return "Ok";
         }
     }
 }

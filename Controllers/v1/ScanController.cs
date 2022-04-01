@@ -9,7 +9,7 @@ namespace packageVulnerabilities.Controllers
     public class ScanController : ControllerBase
     {
         [HttpPost]
-        public ActionResult ScanForVulnerabilities([FromBody] Models.ProjectConfiguration input)
+        public async Task<ActionResult> ScanForVulnerabilities([FromBody] Models.ProjectConfiguration input)
         {
             // one way to extend code is to support routes that except the platform in the route itself e.g /scan/github,
             // and to get the appropriate scanner before executing the code.
@@ -19,7 +19,7 @@ namespace packageVulnerabilities.Controllers
             bool isValid = scanner.IsEcoSystemValid(input.EcoSystem);
             if (!isValid)
                 throw new ArgumentException($"Eco System \"{input.EcoSystem}\" is not supported.");
-            
+            string res = await scanner.ScanFileContent(input.FileContentBase64, input.EcoSystem);
             if (false)
                 return BadRequest();
             return Ok(isValid);
