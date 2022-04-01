@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using packageVulnerabilities.Scanners;
 
 namespace packageVulnerabilities.Controllers
 {
@@ -10,13 +11,18 @@ namespace packageVulnerabilities.Controllers
         [HttpPost]
         public ActionResult ScanForVulnerabilities([FromBody] Models.ProjectConfiguration input)
         {
-            bool failedRequest = false;
-            bool throwException = false;
-            if (throwException)
-                throw new ArgumentException("bad ecosystem");
-            if (failedRequest)
+            // one way to extend code is to support routes that except the platform in the route itself e.g /scan/github,
+            // and to get the appropriate scanner before executing the code.
+            GithubScanner scanner = GithubScanner.GetInstance;
+            //TODO: find a way to show supported eco systems
+
+            bool isValid = scanner.IsEcoSystemValid(input.EcoSystem);
+            if (!isValid)
+                throw new ArgumentException($"Eco System \"{input.EcoSystem}\" is not supported.");
+            
+            if (false)
                 return BadRequest();
-            return Ok(input);
+            return Ok(isValid);
         }
     }
 }

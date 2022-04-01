@@ -1,8 +1,8 @@
-﻿namespace packageVulnerabilities.Models
+﻿namespace packageVulnerabilities.Scanners
 {
     public interface IScanner
     {
         bool IsEcoSystemValid(string ecoSystem);
-        string ScanFileContent(string content);
+        async Task<string> ScanFileContent(string content, string ecoSystem);
     }
 }
