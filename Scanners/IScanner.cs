@@ -1,8 +1,10 @@
-﻿namespace packageVulnerabilities.Scanners
+﻿using static packageVulnerabilities.Models.SecurityVulnerabilities;
+
+namespace packageVulnerabilities.Scanners
 {
     public interface IScanner
     {
         bool IsEcoSystemValid(string ecoSystem);
-        Task<string> ScanFileContent(string content, string ecoSystem);
+        Task<PackagesVulnerability> ScanFileContent(string content, string ecoSystem); //overRide for different responses
     }
 }

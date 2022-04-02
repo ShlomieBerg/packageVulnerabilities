@@ -3,6 +3,7 @@ using GraphQL.Client.Serializer.Newtonsoft;
 using GraphQL;
 using Newtonsoft.Json.Linq;
 using static packageVulnerabilities.Models.SecurityVulnerabilities;
+using packageVulnerabilities.Utils;
 
 namespace packageVulnerabilities.Scanners
 {
@@ -39,10 +40,10 @@ namespace packageVulnerabilities.Scanners
         {
             return SupportedEcoSystems.Contains(ecoSystem);
         }
-        public async Task<string> ScanFileContent(string content, string ecoSystem)
+        public async Task<PackagesVulnerability> ScanFileContent(string content, string ecoSystem)
         {
-            var responseList = new List<dynamic>();
-            string jsonToString = Utils.Helper.FromBase64(content);
+            PackagesVulnerability vulenrabilities = new PackagesVulnerability();
+            string jsonToString = Helper.FromBase64(content);
 
             // should use try catch here
             JObject obj = JObject.Parse(jsonToString);
@@ -54,7 +55,8 @@ namespace packageVulnerabilities.Scanners
             {
                 // dependecy = "deep-override": "1.0.1" - for each token figure out how to send the key to api and the compare with version
 
-                String package = item.Path.Substring(Utils.Consts.RemoveDependenciesIdx);
+
+                String package = item.Path.Substring(Consts.RemoveDependenciesIdx);
                 String currVersion = item.First.ToString();
 
                 var request = new GraphQLRequest
@@ -68,27 +70,26 @@ namespace packageVulnerabilities.Scanners
                         package
                     }
                 };// TODO use the variable to get enum NPM
-                var response = graphQLHttpClient.SendQueryAsync<ResponseType>(request);
+                var response = await graphQLHttpClient.SendQueryAsync<ResponseType>(request);
 
                 List<SecurityVulnerability> nodes = response.Data.SecurityVulnerabilities.Nodes;
 
                 foreach (var node in nodes)
                 {
-                    // for each node compare vulnerableVersionRange with currVersion,
-                    // if true add to list new obj item with
-                    // package's name
-                    // affected version
-                    // vulnerabilitiy's severity
-                    // first patched version
+
+                    List<Tuple<string, string>> seperatedSignAndVersion = Helper.GetVersionsAndSigns(node.VulnerableVersionRange);
+                    bool isVulnerable = seperatedSignAndVersion.All(tuple => Helper.IsVersionsExp(currVersion, tuple.Item2, tuple.Item1));
+
+                    if (isVulnerable)
+                    {
+                        vulenrabilities.VulnerablePackges.Add(new PackageVulnerability(package, currVersion, node.Severity.ToString(), node.FirstPatchedVersion.ToString()));
+        
+                    }
                 }
-
-
             };
-            // add to graphql folder
 
-
-
-            return "Ok";
+            vulenrabilities.VulnerablePackges.ForEach(vul => Console.WriteLine(vul.ToString()));
+            return vulenrabilities;
         }
     }
 }

@@ -45,5 +45,42 @@
         {
             public SecurityVulnerabilityConnection SecurityVulnerabilities { get; set; }
         }
+
+        public class PackageVulnerability
+        {
+            public PackageVulnerability(PackageVulnerability previousPackageVulnerability)
+            {
+                Name = previousPackageVulnerability.Name;
+                Version = previousPackageVulnerability.Version;
+                Severity = previousPackageVulnerability.Severity;
+                FirstPatchedVersion = previousPackageVulnerability.FirstPatchedVersion;
+            }
+            public PackageVulnerability(String name, String version, String severity, String firstPatchedVersion)
+            {
+                Name = name;
+                Version = version;
+                Severity = severity;
+                FirstPatchedVersion = firstPatchedVersion;
+            }
+            public String Name { get; set; }
+            public String Version { get; set; }
+            public String Severity { get; set; }
+            public String FirstPatchedVersion { get; set; }
+        }
+
+        public class PackagesVulnerability
+        {
+            public PackagesVulnerability(PackagesVulnerability previousPackagesVulnerability)
+            {
+                VulnerablePackges = new List<PackageVulnerability>();
+                previousPackagesVulnerability.VulnerablePackges
+                    .ForEach(prevPackageVulnerability => VulnerablePackges.Add(new PackageVulnerability(prevPackageVulnerability)));
+            }
+            public PackagesVulnerability()
+            {
+                VulnerablePackges = new List<PackageVulnerability>();
+            }
+            public List<PackageVulnerability> VulnerablePackges { get; set; }
+        }
     }
-}
+}                 
