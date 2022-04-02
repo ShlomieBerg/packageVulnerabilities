@@ -5,6 +5,54 @@ using Newtonsoft.Json.Linq;
 
 namespace packageVulnerabilities.Scanners
 {
+    
+    public enum SecurityAdvisorySeverity
+    {
+        CRITICAL,
+        HIGH,
+        LOW,
+        MODERATE
+    }
+    public enum SecurityAdvisoryEcosystem
+    {
+        COMPOSER,
+        GO,
+        MAVEN,
+        NPM,
+        PIP,
+        RUBYGEMS,
+        RUST
+    }
+    public class SecurityAdvisoryPackageVersion
+    {
+        public String identifier { get; set; }
+    }
+    public class SecurityAdvisoryPackage
+    {
+        public SecurityAdvisoryEcosystem ecosystem { get; set; }
+        public String name { get; set; }
+    }
+    public class SecurityVulnerability
+    {
+        public SecurityAdvisoryPackageVersion firstPatchedVersion { get; set; }
+        public SecurityAdvisoryPackage package { get; set; }
+        public SecurityAdvisorySeverity severity { get; set; }
+        public String vulnerableVersionRange { get; set; }
+    }
+
+    public class SecurityVulnerabilityConnection
+    {
+        public List<SecurityVulnerability> nodes { get; set; }
+    }
+
+    public class ResponseVulnerabilityCollectionType
+    {
+        public List<SecurityVulnerabilityConnection> Vulnerabilities { get; set; }
+    }
+    public class ResponseVulnerabilitiyType
+    {
+        public SecurityVulnerabilityConnection SecurityVulnerabilityConnection { get; set; }
+    }
     public sealed class GithubScanner : IScanner
     {
         private static GithubScanner instance = null;
@@ -41,42 +89,80 @@ namespace packageVulnerabilities.Scanners
         public async Task<string> ScanFileContent(string content, string ecoSystem)
         {
 
-            // TODO should move to helper util
-            byte[] encodedDataAsBytes = System.Convert.FromBase64String(content);
-            string decodedContentFromBase64 = System.Text.ASCIIEncoding.ASCII.GetString(encodedDataAsBytes);
-            
+            string jsonToString = Utils.Helper.FromBase64(content);
+
             // should use try catch here
-            JObject obj = JObject.Parse(decodedContentFromBase64);
+            JObject obj = JObject.Parse(jsonToString);
 
-            JEnumerable<JToken> dependencies = obj.GetValue("dependencies").Children();
+            JEnumerable<JToken> dependencies = obj.GetValue("dependencies").Children();            
+       
 
-            IEnumerator<JToken> dependenciesEnumerator = dependencies.GetEnumerator();
-            while (dependenciesEnumerator.MoveNext())
+            var tasks = dependencies.Select(async (item, idx) =>
+            {
+                // dependecy = "deep-override": "1.0.1" - for each token figure out how to send the key to api and the compare with version
+
+                String package = item.Path.Substring(Utils.Consts.RemoveDependenciesIdx);
+                String currVersion = item.First.ToString();
+
+                // ecoSystem npm should have ENUM.
+                var request = new GraphQLRequest
+                {
+                    Query = @"query securityVulnerabilities ($ecoSystem: SecurityAdvisoryEcosystem, $first: Int, $package: String) { securityVulnerabilities (ecoSystem: $ecoSystem, first: $first, package: $package) { nodes { severity, package {name, ecosystem}, vulnerableVersionRange, firstPatchedVersion { identifier } } } }",
+                    OperationName = "securityVulnerabilities",
+                    Variables = new
+                    {
+                        ecoSystem = ecoSystem.ToUpper(),
+                        first = 100,
+                        package
+                    }
+                };
+                return graphQLHttpClient.SendQueryAsync<ResponseVulnerabilityCollectionType>(request);
+
+            });
+
+            foreach (var response in await Task.WhenAll(tasks))
+            {
+                Console.WriteLine(response);
+            }
+
+
+            /*while (dependenciesEnumerator.MoveNext())
             {
                 JToken dependency = dependenciesEnumerator.Current;
                 // dependecy = "deep-override": "1.0.1" - for each token figure out how to send the key to api and the compare with version
+                String package = dependency.Path.Substring(Utils.Consts.RemoveDependenciesIdx);
+                String currVersion = dependency.First.ToString();
 
 
+                // ecoSystem npm should have ENUM.
+                var request = new GraphQLRequest
+                {
+                    Query = @"query securityVulnerabilities ($ecoSystem: SecurityAdvisoryEcosystem, $first: Int, $package: String) { securityVulnerabilities (ecoSystem: $ecoSystem, first: $first, package: $package) { nodes { severity, package {name, ecosystem}, vulnerableVersionRange, firstPatchedVersion { identifier } } } }",
+                    OperationName = "securityVulnerabilities",
+                    Variables = new
+                    {
+                        ecoSystem = ecoSystem.ToUpper(),
+                        first = 100,
+                        package
+                    }
+                };
 
-            }
-            var request = new GraphQLRequest
-            {
-               Query = @"query securityVulnerabilities ($ecoSystem: SecurityAdvisoryEcosystem, $first: Int, $package: String) { securityVulnerabilities (ecoSystem: $ecoSystem, first: $first, package: $package) { nodes { severity, package {name, ecosystem}, vulnerableVersionRange, firstPatchedVersion { identifier } } } }",
-               OperationName = "securityVulnerabilities",
-               Variables = new
-               {
-                   ecoSystem = ecoSystem.ToUpper(),
-                   first = 100,
-                   package = "deep-override"
-               }
-            };
+                try
+                {
+                    var graphQLResponse = await graphQLHttpClient.SendQueryAsync<dynamic>(request);
+                    Console.WriteLine(graphQLResponse);
 
-            /*try
-            {
-                var graphQLResponse = await graphQLHttpClient.SendQueryAsync<dynamic>(request);
-            } catch (Exception ex)
-            {
+                }
+                catch (Exception ex)
+                {
+                }
+
+
             }*/
+            // add to graphql folder
+
+
+
             return "Ok";
         }
     }

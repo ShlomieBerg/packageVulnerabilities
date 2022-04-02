@@ -17,6 +17,8 @@ namespace packageVulnerabilities.Controllers
             //TODO: find a way to show supported eco systems
 
             bool isValid = scanner.IsEcoSystemValid(input.EcoSystem);
+            // validate input here
+             
             if (!isValid)
                 throw new ArgumentException($"Eco System \"{input.EcoSystem}\" is not supported.");
             string res = await scanner.ScanFileContent(input.FileContentBase64, input.EcoSystem);
