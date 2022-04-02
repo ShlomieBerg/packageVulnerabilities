@@ -45,7 +45,6 @@ namespace packageVulnerabilities.Scanners
             PackagesVulnerability vulenrabilities = new PackagesVulnerability();
             string jsonToString = Helper.FromBase64(content);
 
-            // should use try catch here
             JObject obj = JObject.Parse(jsonToString);
 
             JEnumerable<JToken> dependencies = obj.GetValue("dependencies").Children();
@@ -65,30 +64,29 @@ namespace packageVulnerabilities.Scanners
                     OperationName = "securityVulnerabilities",
                     Variables = new
                     {
-                        ecosystem = SecurityAdvisoryEcosystem.NPM,
+                        ecosystem = Helper.GetEcoSystemEnumValue(ecoSystem),
                         first = 100,
                         package
                     }
-                };// TODO use the variable to get enum NPM
+                };
                 var response = await graphQLHttpClient.SendQueryAsync<ResponseType>(request);
 
                 List<SecurityVulnerability> nodes = response.Data.SecurityVulnerabilities.Nodes;
-
+                // go over all the response nodes
                 foreach (var node in nodes)
                 {
 
                     List<Tuple<string, string>> seperatedSignAndVersion = Helper.GetVersionsAndSigns(node.VulnerableVersionRange);
+                    // check if curr version in in the vulnerable version range
                     bool isVulnerable = seperatedSignAndVersion.All(tuple => Helper.IsVersionsExp(currVersion, tuple.Item2, tuple.Item1));
 
                     if (isVulnerable)
                     {
-                        vulenrabilities.VulnerablePackges.Add(new PackageVulnerability(package, currVersion, node.Severity.ToString(), node.FirstPatchedVersion.ToString()));
+                        vulenrabilities.VulnerablePackges.Add(new PackageVulnerability(package, currVersion, node.Severity.ToString(), node.FirstPatchedVersion.Identifier));
         
                     }
                 }
             };
-
-            vulenrabilities.VulnerablePackges.ForEach(vul => Console.WriteLine(vul.ToString()));
             return vulenrabilities;
         }
     }

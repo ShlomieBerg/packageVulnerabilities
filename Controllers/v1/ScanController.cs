@@ -15,17 +15,20 @@ namespace packageVulnerabilities.Controllers
             // one way to extend code is to support routes that except the platform in the route itself e.g /scan/github,
             // and to get the appropriate scanner before executing the code.
             GithubScanner scanner = GithubScanner.GetInstance;
-            //TODO: find a way to show supported eco systems
 
-            bool isValid = scanner.IsEcoSystemValid(input.EcoSystem);
-            // validate input here
-             
-            if (!isValid)
-                throw new ArgumentException($"Eco System \"{input.EcoSystem}\" is not supported.");
-            PackagesVulnerability res = new PackagesVulnerability(await scanner.ScanFileContent(input.FileContentBase64, input.EcoSystem));
-            if (false)
-                return BadRequest();
-            return Ok(res);
+            bool isEcoSystemValid = scanner.IsEcoSystemValid(input.EcoSystem);
+           
+            if (!isEcoSystemValid)
+                return BadRequest($"EcoSystem \"{input.EcoSystem}\" is not supported.");
+            try
+            {
+                PackagesVulnerability res = new PackagesVulnerability(await scanner.ScanFileContent(input.FileContentBase64, input.EcoSystem));
+                return Ok(res);
+            } catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+         
         }
     }
 }

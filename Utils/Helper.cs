@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using static packageVulnerabilities.Models.SecurityVulnerabilities;
 
 namespace packageVulnerabilities.Utils
 {
@@ -44,6 +45,15 @@ namespace packageVulnerabilities.Utils
             }
             // sign is less than
             return (compareVersions < 0);
+        }
+
+        public static SecurityAdvisoryEcosystem GetEcoSystemEnumValue(string enumName)
+        {
+            switch(enumName) {
+                case "npm":
+                default:
+                    return SecurityAdvisoryEcosystem.NPM;
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 # packageVulnerabilities
-
-Create an .env file on your local machine and add GITHUB-ACCESS-TOKEN.
+After pulling this project Create an .env file on your local machine and add GITHUB-ACCESS-TOKEN.
 
 Scan endpoint supports only Github securityVulnerabilities GraphQL API at this moment.
 
@@ -15,4 +14,4 @@ body example:
   "fileContentBase64": "ewoibmFtZSI6ICJteUFwcGxpY2F0aW9uIiwKInZlcnNpb24iOiAiMS4wLjAiLAoiZGVwZW5kZW5jaWVzIjogewoiZGVlcC1vdmVycmlkZSI6ICIxLjAuMSIsCiJleHByZXNzIjogIjQuMTcuMSIKfQp9"
 }
 
-* Currently the api only supports npm.
+* Currently the API only supports npm.
